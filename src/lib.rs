@@ -17,20 +17,22 @@ use tracing_core as trace;
 use std::future::Future;
 use std::io;
 
-/// Handle to the Tokio runtime.
+lazy_static::lazy_static! {
+    /// global may_future runtime
+    pub static ref RT: Runtime = Runtime::new().expect("failed to build may_future runtime");
+}
+
+/// Handle to the may_future runtime.
 ///
-/// The Tokio runtime includes a reactor as well as an executor for running
+/// The may_future runtime includes a reactor as well as an executor for running
 /// tasks.
 ///
-/// Instances of `Runtime` can be created using [`new`] or [`Builder`]. However,
-/// most users will use [`tokio::run`], which uses a `Runtime` internally.
 ///
 /// See [module level][mod] documentation for more details.
 ///
 /// [mod]: index.html
 /// [`new`]: #method.new
 /// [`Builder`]: struct.Builder.html
-/// [`tokio::run`]: fn.run.html
 #[derive(Debug)]
 pub struct Runtime {
     inner: Option<Inner>,
@@ -74,8 +76,7 @@ impl Runtime {
     /// Creating a new `Runtime` with default configuration values.
     ///
     /// ```
-    /// use tokio::runtime::Runtime;
-    /// use tokio::prelude::*;
+    /// use may_future::Runtime;
     ///
     /// let rt = Runtime::new()
     ///     .unwrap();
@@ -83,8 +84,7 @@ impl Runtime {
     /// // Use the runtime...
     ///
     /// // Shutdown the runtime
-    /// rt.shutdown_now()
-    ///     .wait().unwrap();
+    /// rt.shutdown_now();
     /// ```
     ///
     /// [mod]: index.html
@@ -99,7 +99,7 @@ impl Runtime {
     /// # Examples
     ///
     /// ```
-    /// use tokio::runtime::Runtime;
+    /// use may_future::Runtime;
     ///
     /// let rt = Runtime::new()
     ///     .unwrap();
@@ -113,7 +113,7 @@ impl Runtime {
         TaskExecutor { inner }
     }
 
-    /// Spawn a future onto the Tokio runtime.
+    /// Spawn a future onto the may_future runtime.
     ///
     /// This spawns the given future onto the runtime's executor, usually a
     /// thread pool. The thread pool is then responsible for polling the future
@@ -126,18 +126,17 @@ impl Runtime {
     /// # Examples
     ///
     /// ```rust
-    /// # use futures::{future, Future, Stream};
-    /// use tokio::runtime::Runtime;
+    /// #![feature(async_await)]
+    /// use may_future::Runtime;
     ///
     /// # fn dox() {
     /// // Create the runtime
     /// let rt = Runtime::new().unwrap();
     ///
     /// // Spawn a future onto the runtime
-    /// rt.spawn(future::lazy(|| {
+    /// rt.spawn(async {
     ///     println!("now running on a worker thread");
-    ///     Ok(())
-    /// }));
+    /// });
     /// # }
     /// # pub fn main() {}
     /// ```
@@ -154,7 +153,7 @@ impl Runtime {
         self
     }
 
-    /// Run a future to completion on the Tokio runtime.
+    /// Run a future to completion on the may_future runtime.
     ///
     /// This runs the given future on the runtime, blocking until it is
     /// complete, and yielding its resolved result. Any tasks or timers which
@@ -202,8 +201,7 @@ impl Runtime {
     /// # Examples
     ///
     /// ```
-    /// use tokio::runtime::Runtime;
-    /// use tokio::prelude::*;
+    /// use may_future::Runtime;
     ///
     /// let rt = Runtime::new()
     ///     .unwrap();
@@ -211,8 +209,7 @@ impl Runtime {
     /// // Use the runtime...
     ///
     /// // Shutdown the runtime
-    /// rt.shutdown_on_idle()
-    ///     .wait().unwrap();
+    /// let _fut = rt.shutdown_on_idle();
     /// ```
     ///
     /// [mod]: index.html
@@ -244,8 +241,7 @@ impl Runtime {
     /// # Examples
     ///
     /// ```
-    /// use tokio::runtime::Runtime;
-    /// use tokio::prelude::*;
+    /// use may_future::Runtime;
     ///
     /// let rt = Runtime::new()
     ///     .unwrap();
@@ -253,8 +249,7 @@ impl Runtime {
     /// // Use the runtime...
     ///
     /// // Shutdown the runtime
-    /// rt.shutdown_now()
-    ///     .wait().unwrap();
+    /// rt.shutdown_now();
     /// ```
     ///
     /// [mod]: index.html

@@ -32,7 +32,7 @@ use std::time::Duration;
 /// ```
 /// use std::time::Duration;
 ///
-/// use tokio::runtime::Builder;
+/// use may_future::Builder;
 /// use tokio_timer::clock::Clock;
 ///
 /// fn main() {
@@ -98,10 +98,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let mut rt = runtime::Builder::new()
+    /// let mut rt = may_future::Builder::new()
     ///     .panic_handler(|err| std::panic::resume_unwind(err))
     ///     .build()
     ///     .unwrap();
@@ -125,10 +123,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let mut rt = runtime::Builder::new()
+    /// let mut rt = may_future::Builder::new()
     ///     .core_threads(4)
     ///     .build()
     ///     .unwrap();
@@ -155,10 +151,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let mut rt = runtime::Builder::new()
+    /// let mut rt = may_future::Builder::new()
     ///     .blocking_threads(200)
     ///     .build();
     /// # }
@@ -183,11 +177,10 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
     /// use std::time::Duration;
     ///
     /// # pub fn main() {
-    /// let mut rt = runtime::Builder::new()
+    /// let mut rt = may_future::Builder::new()
     ///     .keep_alive(Some(Duration::from_secs(30)))
     ///     .build();
     /// # }
@@ -208,10 +201,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let mut rt = runtime::Builder::new()
+    /// let mut rt = may_future::Builder::new()
     ///     .name_prefix("my-pool-")
     ///     .build();
     /// # }
@@ -232,10 +223,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let mut rt = runtime::Builder::new()
+    /// let mut rt = may_future::Builder::new()
     ///     .stack_size(32 * 1024)
     ///     .build();
     /// # }
@@ -253,10 +242,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let thread_pool = runtime::Builder::new()
+    /// let thread_pool = may_future::Builder::new()
     ///     .after_start(|| {
     ///         println!("thread started");
     ///     })
@@ -278,10 +265,8 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime;
-    ///
     /// # pub fn main() {
-    /// let thread_pool = runtime::Builder::new()
+    /// let thread_pool = may_future::Builder::new()
     ///     .before_stop(|| {
     ///         println!("thread stopping");
     ///     })
@@ -303,7 +288,7 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// # use tokio::runtime::Builder;
+    /// # use may_future::Builder;
     /// # pub fn main() {
     /// let runtime = Builder::new().build().unwrap();
     /// // ... call runtime.run(...)
