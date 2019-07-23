@@ -1,17 +1,12 @@
-use std::cell::{Cell, RefCell};
 use std::error::Error;
 use std::fmt;
 use std::future::Future;
-use std::marker::PhantomData;
-
-thread_local!(static ENTERED: Cell<bool> = Cell::new(false));
 
 /// Represents an executor context.
 ///
 /// For more details, see [`enter` documentation](fn.enter.html)
-pub struct Enter {
-    _p: PhantomData<RefCell<()>>,
-}
+#[derive(Debug)]
+pub struct Enter;
 
 /// An error returned by `enter` if an execution scope has already been
 /// entered.
@@ -38,39 +33,33 @@ impl fmt::Display for EnterError {
 
 impl Error for EnterError {}
 
-/// Marks the current thread as being within the dynamic extent of an
+/// Marks the current coroutine as being within the dynamic extent of an
 /// executor.
 ///
 /// Executor implementations should call this function before blocking the
-/// thread. If `None` is returned, the executor should fail by panicking or
-/// taking some other action without blocking the current thread. This prevents
-/// deadlocks due to multiple executors competing for the same thread.
+/// coroutine. If `None` is returned, the executor should fail by panicking or
+/// taking some other action without blocking the current coroutine. This prevents
+/// deadlocks due to multiple executors competing for the same coroutine.
 ///
 /// # Error
 ///
-/// Returns an error if the current thread is already marked
+/// Returns an error if the current coroutine is already marked
 pub fn enter() -> Result<Enter, EnterError> {
-    ENTERED.with(|c| {
-        if c.get() {
-            Err(EnterError { _a: () })
-        } else {
-            c.set(true);
-
-            Ok(Enter { _p: PhantomData })
-        }
-    })
+    Ok(Enter)
 }
 
 impl Enter {
-    /// Blocks the thread on the specified future, returning the value with
+    /// Blocks the coroutine on the specified future, returning the value with
     /// which that future completes.
     pub fn block_on<F: Future>(&mut self, mut f: F) -> F::Output {
-        use crate::park::{Park, ParkThread};
+        use super::park::Parker;
+        use tokio_executor::park::Park;
+
         use std::pin::Pin;
         use std::task::Context;
         use std::task::Poll::Ready;
 
-        let mut park = ParkThread::new();
+        let mut park = Parker::new();
         let waker = park.unpark().into_waker();
         let mut cx = Context::from_waker(&waker);
 
@@ -82,22 +71,9 @@ impl Enter {
             if let Ready(v) = f.as_mut().poll(&mut cx) {
                 return v;
             }
-            park.park().unwrap();
+            if park.park().is_err() {
+                may::coroutine::trigger_cancel_panic();
+            }
         }
-    }
-}
-
-impl fmt::Debug for Enter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Enter").finish()
-    }
-}
-
-impl Drop for Enter {
-    fn drop(&mut self) {
-        ENTERED.with(|c| {
-            assert!(c.get());
-            c.set(false);
-        });
     }
 }
