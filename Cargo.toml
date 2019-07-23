@@ -1,0 +1,19 @@
+[package]
+name = "may_future"
+version = "0.1.0"
+authors = ["Xudong Huang <huangxu008@hotmail.com>"]
+edition = "2018"
+
+[dependencies]
+may = { path = "../../../may" }
+num_cpus = "1"
+tracing-core = "0.1"
+tokio-sync = { git = "https://github.com/tokio-rs/tokio.git" }
+tokio-timer = { git = "https://github.com/tokio-rs/tokio.git" }
+tokio-reactor = { git = "https://github.com/tokio-rs/tokio.git" }
+tokio-executor = { git = "https://github.com/tokio-rs/tokio.git" }
+tokio-threadpool = { git = "https://github.com/tokio-rs/tokio.git" }
+tokio-current-thread = { git = "https://github.com/tokio-rs/tokio.git" }
+
+[dev-dependencies]
+futures-preview = "0.3.0-alpha.17"
