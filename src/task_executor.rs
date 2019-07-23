@@ -51,7 +51,8 @@ impl TaskExecutor {
     /// This function panics if the spawn fails. Failure occurs if the executor
     /// is currently at capacity and is unable to spawn a new future.
     pub fn spawn<F>(&self, future: F)
-    where F: Future<Output = ()> + Send + 'static,
+    where
+        F: Future<Output = ()> + Send + 'static,
     {
         self.inner.spawn(future).unwrap();
     }

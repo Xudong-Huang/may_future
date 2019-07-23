@@ -1,15 +1,16 @@
 #![feature(async_await)]
 
-
+mod background;
 mod builder;
 mod enter;
-mod background;
 mod task_executor;
 
 pub use self::builder::Builder;
 pub use self::task_executor::TaskExecutor;
-use self::enter::enter;
+
 use self::background::Background;
+use self::enter::enter;
+
 use tracing_core as trace;
 
 use std::future::Future;
@@ -145,7 +146,8 @@ impl Runtime {
     /// This function panics if the spawn fails. Failure occurs if the executor
     /// is currently at capacity and is unable to spawn a new future.
     pub fn spawn<F>(&self, future: F) -> &Self
-    where F: Future<Output = ()> + Send + 'static,
+    where
+        F: Future<Output = ()> + Send + 'static,
     {
         self.inner().pool.spawn(future);
         self
@@ -175,9 +177,7 @@ impl Runtime {
         tokio_executor::with_default(&mut self.inner().pool.sender(), || {
             tokio_reactor::with_default(bg.reactor(), || {
                 tokio_timer::with_default(bg.timer(), || {
-                    trace::dispatcher::with_default(trace, || {
-                        entered.block_on(future)
-                    })
+                    trace::dispatcher::with_default(trace, || entered.block_on(future))
                 })
             })
         })
