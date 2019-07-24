@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 may = "0.3"
+co_waiter = { git = "https://github.com/Xudong-Huang/co_waiter.git" }
 num_cpus = "1"
 lazy_static = "1"
 tracing-core = "0.1"
@@ -15,3 +16,9 @@ tokio-reactor = { git = "https://github.com/tokio-rs/tokio.git" }
 tokio-executor = { git = "https://github.com/tokio-rs/tokio.git" }
 tokio-threadpool = { git = "https://github.com/tokio-rs/tokio.git" }
 tokio-current-thread = { git = "https://github.com/tokio-rs/tokio.git" }
+
+[dev-dependencies]
+tokio = { git = "https://github.com/tokio-rs/tokio.git" }
+
+[patch.crates-io]
+may = { git = "https://github.com/Xudong-Huang/may.git"  }

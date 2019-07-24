@@ -1,16 +1,16 @@
 #![feature(async_await)]
 
-mod background;
+// mod background;
 mod builder;
-mod enter;
-mod park;
+// mod enter;
+// mod park;
 mod task_executor;
 
 pub use self::builder::Builder;
 pub use self::task_executor::TaskExecutor;
 
-use self::background::Background;
-use self::enter::enter;
+// use self::background::Background;
+// use self::enter::enter;
 
 use tracing_core as trace;
 
@@ -45,16 +45,6 @@ struct Inner {
 
     /// Tracing dispatcher
     trace: trace::Dispatch,
-
-    /// Maintains a reactor and timer that are always running on a background
-    /// thread. This is to support `runtime.block_on` w/o requiring the future
-    /// to be `Send`.
-    ///
-    /// A dedicated background thread is required as the threadpool threads
-    /// might not be running. However, this is a temporary work around.
-    ///
-    /// TODO: Delete this
-    background: Background,
 }
 
 // ===== impl Runtime =====
@@ -167,20 +157,19 @@ impl Runtime {
     /// future panics, or if called within an asynchronous execution context.
     pub fn block_on<F>(&self, future: F) -> F::Output
     where
-        F: Future,
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
     {
-        let mut entered = enter().expect("nested block_on");
+        let blocker = co_waiter::Waiter::new();
 
-        let bg = &self.inner().background;
-        let trace = &self.inner().trace;
+        let blocker_ref: &'static co_waiter::Waiter<_> = unsafe { std::mem::transmute(&blocker) };
 
-        tokio_executor::with_default(&mut self.inner().pool.sender(), || {
-            tokio_reactor::with_default(bg.reactor(), || {
-                tokio_timer::with_default(bg.timer(), || {
-                    trace::dispatcher::with_default(trace, || entered.block_on(future))
-                })
-            })
-        })
+        self.spawn(async move {
+            let res = future.await;
+            blocker_ref.set_rsp(res);
+        });
+
+        blocker.wait_rsp(None).expect("failed to wait result")
     }
 
     /// Signals the runtime to shutdown once it becomes idle.

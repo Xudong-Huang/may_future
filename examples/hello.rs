@@ -11,7 +11,7 @@ fn main() {
     coroutine::scope(|s| {
         for i in 0..100 {
             go!(s, move || {
-                RT.block_on(async {
+                RT.block_on(async move {
                     println!("hello world from coroutine {}", i);
                 });
             });
