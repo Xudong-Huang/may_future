@@ -1,25 +1,31 @@
 #![feature(async_await)]
 
-// mod background;
+mod background;
 mod builder;
-// mod enter;
-// mod park;
+mod enter;
+mod park;
 mod task_executor;
 
 pub use self::builder::Builder;
 pub use self::task_executor::TaskExecutor;
 
-// use self::background::Background;
-// use self::enter::enter;
+use self::background::Background;
 
 use tracing_core as trace;
 
+use std::cell::Cell;
 use std::future::Future;
 use std::io;
 
 lazy_static::lazy_static! {
     /// global may_future runtime
     pub static ref RT: Runtime = Runtime::new().expect("failed to build may_future runtime");
+}
+
+thread_local! {
+    /// Tracks if the runtime start, each thread would keep a never return co
+    /// to init the tokio run time, this is a hack to work around the TLS context
+    static CURRENT_RUNTIME: Cell<bool> = Cell::new(false)
 }
 
 /// Handle to the may_future runtime.
@@ -45,6 +51,16 @@ struct Inner {
 
     /// Tracing dispatcher
     trace: trace::Dispatch,
+
+    /// Maintains a reactor and timer that are always running on a background
+    /// thread. This is to support `runtime.block_on` w/o requiring the future
+    /// to be `Send`.
+    ///
+    /// A dedicated background thread is required as the threadpool threads
+    /// might not be running. However, this is a temporary work around.
+    ///
+    /// TODO: Delete this
+    background: Background,
 }
 
 // ===== impl Runtime =====
@@ -170,6 +186,61 @@ impl Runtime {
         });
 
         blocker.wait_rsp(None).expect("failed to wait result")
+    }
+
+    /// Run a future to completion on local thread/coroutine.
+    ///
+    /// This runs the given future on the local thead/coroutine,
+    /// blocking until it is complete, and yielding its resolved
+    /// result. Any tasks or timers which the future spawns
+    /// internally will be executed on the runtime.
+    ///
+    /// This method should not be called from an asynchronous context.
+    ///
+    /// This method is slower than the `block_on` method, it evolves
+    /// more works for the coroutine scheduling. But this method doesn't
+    /// requre the futrue be `Send + 'static`
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the executor is at capacity, if the provided
+    /// future panics, or if called within an asynchronous execution context.
+    pub fn block_on_local<F>(&self, future: F) -> F::Output
+    where
+        F: Future,
+    {
+        CURRENT_RUNTIME.with(|b_init| {
+            if !b_init.get() {
+                let builder = may::coroutine::Builder::new().stack_size(0x400);
+                let clo = || {
+                    let bg = &RT.inner().background;
+                    let trace = &RT.inner().trace;
+                    tokio_executor::with_default(&mut RT.inner().pool.sender(), || {
+                        tokio_reactor::with_default(bg.reactor(), || {
+                            tokio_timer::with_default(bg.timer(), || {
+                                trace::dispatcher::with_default(trace, || {
+                                    enter::block_on(async {
+                                        // this future would never return
+                                        // and all default runtime are set
+                                        // properly for `enter::block_on`
+                                        let (_tx, rx) = tokio_sync::oneshot::channel::<()>();
+                                        rx.await.ok();
+                                    })
+                                })
+                            })
+                        })
+                    });
+                };
+                unsafe {
+                    // here we use the spawn_local to run
+                    // the coroutine in current thread.
+                    builder.spawn_local(clo).ok();
+                }
+                b_init.set(true);
+            }
+        });
+
+        enter::block_on(future)
     }
 
     /// Signals the runtime to shutdown once it becomes idle.

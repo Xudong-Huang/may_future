@@ -43,15 +43,15 @@ pub fn spawn(clock: &Clock) -> io::Result<Background> {
     })
 }
 
-// impl Background {
-//     pub(super) fn reactor(&self) -> &tokio_reactor::Handle {
-//         &self.reactor_handle
-//     }
+impl Background {
+    pub(super) fn reactor(&self) -> &tokio_reactor::Handle {
+        &self.reactor_handle
+    }
 
-//     pub(super) fn timer(&self) -> &timer::Handle {
-//         &self.timer_handle
-//     }
-// }
+    pub(super) fn timer(&self) -> &timer::Handle {
+        &self.timer_handle
+    }
+}
 
 impl Drop for Background {
     fn drop(&mut self) {

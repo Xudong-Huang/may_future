@@ -1,4 +1,4 @@
-use super::{Inner, Runtime};
+use super::{background, Inner, Runtime};
 use tokio_reactor::Reactor;
 
 use tokio_reactor;
@@ -324,7 +324,7 @@ impl Builder {
         let dispatch = trace::dispatcher::get_default(trace::Dispatch::clone);
         let trace = dispatch.clone();
 
-        // let background = background::spawn(&clock)?;
+        let background = background::spawn(&clock)?;
 
         let pool = self
             .threadpool_builder
@@ -349,7 +349,11 @@ impl Builder {
             .build();
 
         Ok(Runtime {
-            inner: Some(Inner { pool, trace }),
+            inner: Some(Inner {
+                pool,
+                background,
+                trace,
+            }),
         })
     }
 }
