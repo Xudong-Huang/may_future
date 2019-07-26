@@ -20,5 +20,5 @@ tokio-current-thread = { git = "https://github.com/tokio-rs/tokio.git" }
 [dev-dependencies]
 tokio = { git = "https://github.com/tokio-rs/tokio.git" }
 
-[patch.crates-io]
-may = { git = "https://github.com/Xudong-Huang/may.git"  }
+# [patch.crates-io]
+# may = { git = "https://github.com/Xudong-Huang/may.git"  }
